@@ -7,7 +7,7 @@
 ## Impactos no seu Projeto
 
 * Usar o botões minimalistas e multifunções;
-* Usar botões touch ao invés de push bottons;
+* Usar botões touch ao invés de push buttons;
 * Entender a importância do UML;
 * Entendimento do sono profundo do ESP32.
 
