@@ -20,24 +20,120 @@
 ---
 # Usando Botões Touch
 
-Você sabia que o ESP32 possui pinos GPIO (General Propouse Input Output) que atuam como botões **touch**? 
+Você sabia que o ESP32 possui pinos GPIO (General Propouse Input Output) que atuam como botões **touch**?
 
-Os pinos são:
+E você pode assim substituir os seus botões da caixinha e colocar um papel alumínio de fora ou uma chapinha de refrigerante recortada. Passe Bombril para remover a tinta da lata;
 
-* T0 (GPIO4)
-* T1 (GPIO0)
-* T2 (GPIO2)
-* T3 (GPIO15)
-* T4 (GPIO13)
-* T5 (GPIO12)
-* T6 (GPIO14)
-* T7 (GPIO27)
-* T8 (GPIO33)
-* T9 (GPIO32)
+Os 10 pinos capacitivos que detectam o toque no ESP32 são:
+
+1) T0 (GPIO4)
+2) T1 (GPIO0)
+3) T2 (GPIO2)
+4) T3 (GPIO15)
+5) T4 (GPIO13)
+6) T5 (GPIO12)
+7) T6 (GPIO14)
+8) T7 (GPIO27)
+9) T8 (GPIO33)
+10) T9 (GPIO32)
+
+Você só precisa usar o comando **touchRead(TOUCH_PIN)** para ler o sensibilidade do toque. Valor de **touchRead** próximo de 10 estão detectando o toque. Próximos de 80, estão sem toque.
+
+## Exemplo de Código:
+
+```
+#define TOUCH_PIN T8  // GPIO33
+
+int threshold = 20;      // Limiar para detecção de toque
+unsigned long previousMillis = 0; // Armazena o último tempo em que o touch foi lido
+const long interval = 100; // Intervalo em milissegundos para leituras
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Inicializando Touch no ESP32...");
+}
+
+void loop() {
+  // Verifica o tempo atual
+  unsigned long currentMillis = millis();
+
+  // Se o intervalo tiver passado, faz a leitura do sensor
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis; // Atualiza o último tempo de execução
+
+    // Ler o valor do sensor capacitivo
+    int touchValue = touchRead(TOUCH_PIN);
+
+    // Imprimir o valor no monitor serial
+    Serial.print("Touch Value: ");
+    Serial.println(touchValue);
+
+    // Verificar se o valor está abaixo do limiar
+    if (touchValue < threshold) {
+      Serial.println("Toque detectado!");
+    }
+  }
+}
+
+```
 
 ---
 # Fazendo seu ESP32 Dormir
 
+O ESP32 pode dormir dormir teoricamente por 136 anos, porque seu relógio interno pode contar até 2^64 microsegundos.
+
+Claro que não poderemos testar isso, porque uma bateria não duraria todo esse tempo.
+
+Esse código exemplo faz um pisca-pisca dormir por 10s.
+
+Note que você nunca usará o **void loop()** novamente se usar o recurso do sono profundo, porque o ESP32 se reinicia todas as vezes que ele acorda. Portanto, seu código do projeto deverá estar todo dentro do **void setup()**.
+
+No modo **sono profundo**, as varáveis da RAM são reiniciada a cada vez que o ESP32 acordar. Portanto, prepare seu código para "perder" dados no modo sono profundo.
+
+No modo profundo, o ESP32 consome 10uA (microAmpères). **Isso é 2000x menor que a corrente de um LED vermelho**.
+
+
+## Código 1: Faz um LED acender por 3s e hibernar por 7s
+
+```
+#define LED_PIN 2 // GPIO onde o LED está conectado
+
+void setup() {
+  Serial.begin(115200);
+
+  // Configuração do LED como saída
+  pinMode(LED_PIN, OUTPUT);
+
+  // Acender o LED para indicar atividade
+  digitalWrite(LED_PIN, HIGH);
+  Serial.println("ESP32 despertou! LED ligado por 3 segundos.");
+
+  // Variáveis para controlar o tempo usando millis()
+  unsigned long startMillis = millis(); // Registrar o momento inicial
+  unsigned long currentMillis;
+
+  // Manter o LED aceso por 3 segundos
+  while (true) {
+    currentMillis = millis();
+    if (currentMillis - startMillis >= 3000) { // 3 segundos (3000 ms)
+      break; // Sai do loop após 3 segundos
+    }
+  }
+
+  // Apagar o LED
+  digitalWrite(LED_PIN, LOW);
+  Serial.println("LED desligado. Indo para sono profundo...");
+
+  // Configurar sono profundo por 7 segundos
+  esp_sleep_enable_timer_wakeup(7 * 1000000); // 7 segundos em microsegundos
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // Nunca será utilizado no modo sono profundo.
+}
+
+```
 
 ---
 # Entendo o UML
