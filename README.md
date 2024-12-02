@@ -297,6 +297,7 @@ ESP32 -> ESP32: esp_deep_sleep_start()
         |                               |
         +---------------------------------+
                            usa
+```
 
 Problemas no Diagrama:
 -----------------------------------------------------------------------------------------
@@ -324,8 +325,7 @@ Problemas Identificados:
 - O Wi-Fi pode desconectar sem tratamento no código.
 - O código não considera reconexões nem modos de economia de energia.
 - A leitura dos sensores e envio dos dados estão acoplados diretamente no loop(), tornando o código difícil de manter.
-
-```
+- 
 
 ### Problemas Comuns em Diagramas Incompletos
 
