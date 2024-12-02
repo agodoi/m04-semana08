@@ -294,8 +294,8 @@ ESP32 -> ESP32: esp_deep_sleep_start()
 | + setup()         |                | + connectToWifi() |
 | + loop()          |                | + add()           |
 |-------------------|                | + publish()       |
-        |                               |
-        +---------------------------------+
+        |                                     |
+        +-------------------------------------+
                            usa
 ```
 
@@ -346,4 +346,14 @@ Problemas Identificados:
 
 # Dinâmica em grupo
 
-Seu grupo foi encarregado de evoluir o projeto para ser energizado por uma bateria recarregável de 9V
+Turma, seu grupo foi encarregado de evoluir um projeto IoT. O ESP32 precisa ficar acordado por 10s e hibernar por +10s.
+
+
+1) Tenha um display com o aviso "Botão X liga LED". Essa mensagem deve aparecer enquanto o ESP32 está acordado;
+3) Tenha uma entrada touch para ligar o LED e uma msg dizendo que o LED ligou;
+4) Mantenha o LED ligado até que o outra entrada touch seja tocada para desligar o LED (dentro do prazo de acordado);
+5) Imprima uma msg dizendo que o LED foi desligado;
+6) Coloque o ESP32 para dormir por 10s;
+7) Ao retornar, o usuário tem 10s para ligar e desligar o LED usando botões touch;
+8) Desenvolva um UML sequencial para explicar seu algoritmo.
+9) Haverá uma votção para o melhor grupo que ganhará um prêmio: uma volta dentro do Inteli no Fusca como passageiro.
