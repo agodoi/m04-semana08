@@ -77,6 +77,8 @@ void loop() {
 
 ```
 
+Dicas importante: caso o seu ESP32 esteja detectando valores malucos do pino no modo touch e você não está encostando no pino, faça uma leitura de 10 amostras no void setup(), tire a média e salve esse valor. Depois você pode que o usuário colocar o dedo no pino e tire +10 amostras e calcule novamente a média. Agora é só fazer o algorimo ignorar a média do valor quando inativo e considerar valores próximos da média quando ativo.
+
 ---
 # Fazendo seu ESP32 Dormir
 
@@ -136,151 +138,210 @@ void loop() {
 ```
 
 ---
+## Código 2: Faz publicação no Ubidots e Hiberna
+
+```
+#include "UbidotsEsp32Mqtt.h"
+
+const char *WIFI_SSID = ""; // Put here your Wi-Fi SSID
+const char *WIFI_PASS = ""; // Put here your Wi-Fi password
+
+const char *UBIDOTS_TOKEN = "PEGAR O TOKEN INDIVIDUAL QUE CHEGOU NO SLACK DO SEU GRUPO"; // Token do Ubidots
+const char *DEVICE_LABEL = "coloque_um_nome_sem_caracteres_especiais"; // Nome do dispositivo
+const char *VARIABLE_LABEL1 = "sua variável"; // Variável 1
+const char *VARIABLE_LABEL2 = "sua variável"; // Variável 2
+const char *CLIENT_ID = ""; // Identificador único para o cliente
+
+Ubidots ubidots(UBIDOTS_TOKEN, CLIENT_ID); // Instância do Ubidots
+
+uint8_t pinPotenciometro = 34;
+uint8_t pinBotao = 33;
+uint8_t pinLED = 2;
+
+/****************************************
+ * Auxiliar Functions
+ ****************************************/
+
+void callback(char *topic, byte *payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+/****************************************
+ * Main Functions
+ ****************************************/
+
+void setup() {
+  // Configuração inicial
+  Serial.begin(115200);
+  ubidots.setDebug(true); // Habilita mensagens de debug
+  ubidots.connectToWifi(WIFI_SSID, WIFI_PASS);
+  ubidots.setCallback(callback);
+  ubidots.setup();
+  ubidots.reconnect();
+  pinMode(pinBotao, INPUT_PULLUP);
+  pinMode(pinPotenciometro, INPUT);
+  pinMode(pinLED, OUTPUT);
+
+  // Publica os dados antes de entrar no modo de sono profundo
+  if (!ubidots.connected()) {
+    ubidots.reconnect();
+  }
+
+  // Lê os valores dos sensores
+  float value1 = analogRead(pinPotenciometro);
+  bool value2 = digitalRead(pinBotao);
+
+  // Exibe os valores no monitor serial
+  Serial.println("Lendo dados:");
+  Serial.println(value1);
+  Serial.println(value2);
+
+  // Publica os valores no Ubidots
+  ubidots.add(VARIABLE_LABEL1, value1);
+  ubidots.add(VARIABLE_LABEL2, value2);
+  ubidots.publish(DEVICE_LABEL);
+  
+  Serial.println("Dados enviados para o Ubidots.");
+
+  // Configura o sono profundo por 5 segundos
+  Serial.println("Entrando em sono profundo por 5 segundos...");
+  esp_sleep_enable_timer_wakeup(5 * 1000000); // Tempo em microsegundos
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // O ESP32 nunca chegará aqui no modo de sono profundo
+}
+
+```
+
+
+---
 # Entendo o UML
 
+A Unified Modeling Language (UML) é uma linguagem de modelagem visual padronizada que fornece uma maneira versátil, flexível e amigável de visualizar o design de um sistema. 
 
+Com o UML, é possível especificar, visualizar, construir e documentar artefatos de sistemas de software. 
 
-### Problemas no Diagrama
-1. **Ausência de visibilidade dos atributos e métodos** (`+`, `-`, `#`).
-2. **Relações incorretas ou faltantes** (ex.: agregação, composição, herança).
-3. **Nomes genéricos ou ambíguos** para classes e métodos.
-4. **Faltam associações claras entre as classes**.
-5. **Inconsistência no uso de tipos de dados dos atributos**.
+O UML oferece uma variedade de diagramas e vamos focar no Diagrama de Sequência: é um tipo de diagrama de interação que mostra como os objetos interagem em um determinado cenário de tempo. Ele ilustra a sequência de mensagens trocadas entre os objetos e são essenciais para modelar interações dinâmicas em sistemas de software. 
 
----
+Vamos a um exemplo:
 
-**Descrição Textual do Sistema**
-- O sistema gerencia um e-commerce com produtos, clientes e pedidos.
-- Cada pedido está associado a um cliente e pode conter múltiplos produtos.
-- Os clientes têm informações como nome e e-mail.
-- Os produtos possuem nome, preço e estoque.
-- O pedido registra a data do pedido e o total a pagar.
+### Diagrama UML Completo
 
----
-
-**Diagrama UML Incompleto**
 ```
-+-----------------+              +----------------+
-|     Cliente     |              |    Produto     |
-|-----------------|              |----------------|
-| nome            |              | nome           |
-| e-mail          |              | preço          |
-|-----------------|              |----------------|
-|                 |              |                |
-+-----------------+              +----------------+
-         |                                |
-         |                                |
-         +--------------------------------+
-                     |
-                     |
-             +---------------+
-             |    Pedido     |
-             |---------------|
-             | data          |
-             | total         |
-             |---------------|
-             |               |
-             +---------------+
-```
++-------------------+                +-------------------+                +-------------------+
+|       ESP32       |                |      Ubidots      |                |       Sensor       |
+|-------------------|                |-------------------|                |-------------------|
+| - pinLED: int     |                | - token: String   |                | - value: float    |
+| - pinButton: int  |                | - clientId: String|                |-------------------|
+| - pinPot: int     |                |-------------------|                | + readAnalog()    |
+|-------------------|                | + connectToWifi() |                | + readDigital()   |
+| + setup()         |                | + setDebug()      |                |-------------------|
+| + callback()      |                | + reconnect()     |                          |     
+|-------------------|                | + add()           |                          |
+        |                            | + publish()       |                          |
+        |                                    |                                      |
+        +------------------------------------+--------------------------------------+
+                           usa                               lê
 
----
+Diagrama de Sequência:
+-----------------------------------------------------------------------------------------
+ESP32 -> ESP32: setup()
+ESP32 -> Serial: Serial.begin(115200)
+ESP32 -> Ubidots: setDebug(true)
+ESP32 -> Ubidots: connectToWifi(WIFI_SSID, WIFI_PASS)
+ESP32 -> Ubidots: setCallback(callback)
+ESP32 -> Ubidots: setup()
+ESP32 -> Ubidots: reconnect()
 
-### Problemas para os Alunos Corrigirem
-1. Adicionar visibilidade (`+`, `-`) aos atributos.
-2. Definir os tipos de dados dos atributos (ex.: `String`, `float`, `Date`).
-3. Inserir métodos nas classes apropriadas (ex.: `adicionarProduto()`, `calcularTotal()`).
-4. Corrigir as relações:
-   - O `Cliente` deve ter uma **associação 1 para muitos** com `Pedido`.
-   - O `Pedido` deve ter uma **associação muitos para muitos** com `Produto` (com uma classe intermediária, se necessário).
-5. Adicionar o nome das relações nos conectores (ex.: "realiza", "contém").
-6. Identificar possíveis agregações ou composições (ex.: `Pedido` e `Produto`).
+loop {
+    ESP32 -> Sensor: readAnalog(pinPotentiometro)
+    ESP32 <- Sensor: Retorna valor analógico (float)
 
----
+    ESP32 -> Sensor: readDigital(pinBotao)
+    ESP32 <- Sensor: Retorna valor digital (bool)
 
-**Atividade**
-- "Corrija o diagrama acima com base na descrição textual fornecida, garantindo que todos os problemas sejam resolvidos e que o diagrama UML esteja completo e correto." 
+    ESP32 -> Serial: Imprime "Lendo dados: " + valores
+    ESP32 -> Ubidots: add(VARIABLE_LABEL1, value1)
+    ESP32 -> Ubidots: add(VARIABLE_LABEL2, value2)
+    ESP32 -> Ubidots: publish(DEVICE_LABEL)
 
-Após os ajustes, peça que os alunos expliquem como corrigiram os erros e o impacto das mudanças no design do sistema.
+    ESP32 -> Serial: Imprime "Dados enviados para o Ubidots"
+}
 
+ESP32 -> Serial: Imprime "Indo para sono profundo"
+ESP32 -> ESP32: esp_sleep_enable_timer_wakeup(5 * 1000000)
+ESP32 -> ESP32: esp_deep_sleep_start()
 
-
-
-
-Segue a solução corrigida do **diagrama de classes UML**, com as correções necessárias aplicadas.
-
----
-
-### **Diagrama UML Corrigido**
-```
-+-----------------+                +----------------+
-|     Cliente     |                |    Produto     |
-|-----------------|                |----------------|
-| - nome: String  |                | - nome: String |
-| - email: String |                | - preco: float |
-|-----------------|                | - estoque: int |
-| + getNome()     |                |----------------|
-| + getEmail()    |                | + atualizarEstoque(qtd: int) |
-|-----------------|                +----------------+
-         |                                  |
-         | 1                              * |
-         |                                  |
-         +----------------------------------+
-                      realiza
-                      1..*  
-         +-----------------+
-         |     Pedido      |
-         |-----------------|
-         | - data: Date    |
-         | - total: float  |
-         |-----------------|
-         | + calcularTotal()|
-         | + adicionarProduto(p: Produto) |
-         | + getData()                    |
-         |-----------------|
-                  |
-                  | *
-                  |
-     +----------------------+
-     |    ItemPedido        |
-     |----------------------|
-     | - quantidade: int    |
-     |----------------------|
-     | + getSubtotal():float|
-     +----------------------+
-             *
-             |
-             |
-        +---------+
-        | Produto |
-        +---------+
 ```
 
----
+## Diagrama UML Incompleto
 
-### **Explicação das Correções**
+```
++-------------------+                +-------------------+
+|       ESP32       |                |      Ubidots      |
+|-------------------|                |-------------------|
+| - pinPot: int     |                | - token: String   |
+| - pinButton: int  |                | - clientId: String|
+|-------------------|                |-------------------|
+| + setup()         |                | + connectToWifi() |
+| + loop()          |                | + add()           |
+|-------------------|                | + publish()       |
+        |                               |
+        +---------------------------------+
+                           usa
 
-1. **Visibilidade dos Atributos e Métodos**
-   - Todos os atributos agora possuem visibilidade: `-` para privado e `+` para público.
-   - Métodos públicos foram adicionados com base nas necessidades do sistema (ex.: `getNome`, `calcularTotal`).
+Problemas no Diagrama:
+-----------------------------------------------------------------------------------------
+1. setup():
+    - Conecta ao Wi-Fi diretamente sem verificar status.
+    - Configura o Ubidots, mas não implementa reconexão.
 
-2. **Definição de Tipos de Dados**
-   - Foram especificados os tipos de dados para cada atributo (ex.: `String` para nome, `float` para preço e total, `Date` para a data do pedido).
+2. loop():
+    - Contém lógica redundante e misturada com leitura de sensores e envio.
+    - Não verifica se o Ubidots está conectado antes de publicar.
 
-3. **Relações entre Classes**
-   - Adicionada uma relação **1 para muitos** entre `Cliente` e `Pedido` (um cliente pode fazer vários pedidos).
-   - Adicionada uma relação **muitos para muitos** entre `Pedido` e `Produto` usando uma classe intermediária chamada `ItemPedido`.
-     - `ItemPedido` inclui o atributo `quantidade` para indicar quantas unidades do produto estão associadas ao pedido.
-     - Esta classe resolve a necessidade de múltiplas instâncias do mesmo produto em um único pedido.
+3. Relação:
+    - O ESP32 "usa" Ubidots de forma dependente, mas sem tratamento de erros.
+    - Falta de separação entre as tarefas (leitura de sensores, envio de dados, etc.).
 
-4. **Agregação**
-   - A classe `ItemPedido` está agregada à classe `Pedido` e à classe `Produto`.
+Exemplo de Fluxo de Execução:
+-----------------------------------------------------------------------------------------
+ESP32 -> Ubidots: connectToWifi(WIFI_SSID, WIFI_PASS)
+ESP32 -> Sensor: analogRead(pinPot)
+ESP32 -> Sensor: digitalRead(pinButton)
+ESP32 -> Ubidots: add(variable, value)
+ESP32 -> Ubidots: publish(device)
 
-5. **Métodos Úteis**
-   - `Pedido` recebeu métodos como `calcularTotal` (que calcula o valor total do pedido) e `adicionarProduto`.
-   - `Produto` recebeu o método `atualizarEstoque` para gerenciar a quantidade disponível.
+Problemas Identificados:
+- O Wi-Fi pode desconectar sem tratamento no código.
+- O código não considera reconexões nem modos de economia de energia.
+- A leitura dos sensores e envio dos dados estão acoplados diretamente no loop(), tornando o código difícil de manter.
 
-6. **Relações Nomeadas**
-   - Foi adicionado o nome da relação "realiza" entre `Cliente` e `Pedido` para descrever a interação.
+```
+
+### Problemas Comuns em Diagramas Incompletos
+
+* Ausência de Modularidade: toda a lógica é colocada diretamente no setup() ou loop(), sem métodos auxiliares para leitura de sensores ou envio de dados.
+
+* Falta de Tratamento de Erros: não verifica se a conexão Wi-Fi foi estabelecida antes de tentar enviar dados.
+
+* Não implementa lógica para reconectar ao Ubidots ou ao Wi-Fi.
+
+* Uso Ineficiente de Recursos: não utiliza modos de economia de energia, como o sono profundo.
+
+* As leituras dos sensores são feitas continuamente, sem intervalos controlados por millis().
+
+* Acoplamento Excessivo: a lógica de leitura de sensores e envio de dados está acoplada, dificultando testes e modificações futuras.
+
+* Falta de Documentação e Comentários: o código não possui explicações suficientes, dificultando o entendimento.
 
 
 # Dinâmica em grupo
