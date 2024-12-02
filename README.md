@@ -357,3 +357,5 @@ Turma, seu grupo foi encarregado de evoluir um projeto IoT. O ESP32 precisa fica
 7) Ao retornar, o usuário tem 10s para ligar e desligar o LED usando botões touch;
 8) Desenvolva um UML sequencial para explicar seu algoritmo.
 9) Haverá uma votção para o melhor grupo que ganhará um prêmio: uma volta dentro do Inteli no Fusca como passageiro.
+
+![Fusca](https://github.com/agodoi/m04-semana08/blob/main/imgs/fusca.jpg)
