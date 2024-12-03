@@ -37,7 +37,7 @@ Os 10 pinos capacitivos que detectam o toque no ESP32 são:
 9) T8 (GPIO33)
 10) T9 (GPIO32)
 
-Você só precisa usar o comando **touchRead(TOUCH_PIN)** para ler o sensibilidade do toque. Valor de **touchRead** próximo de 10 estão detectando o toque. Próximos de 80, estão sem toque.
+Você só precisa usar o comando **touchRead(TOUCH_PIN)** para ler o sensibilidade do toque. Valor de **touchRead** próximo de 10 estão detectando o toque. Próximos de 90, estão sem toque.
 
 ## Exemplo de Código:
 
