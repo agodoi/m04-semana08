@@ -223,7 +223,7 @@ void loop() {
 
 
 ---
-# Entendo o UML
+# Entendendo o UML
 
 A Unified Modeling Language (UML) é uma linguagem de modelagem visual padronizada que fornece uma maneira versátil, flexível e amigável de visualizar o design de um sistema. 
 
